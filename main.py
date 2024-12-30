@@ -29,8 +29,8 @@ WHITE_KEY_HEIGHT = HEIGHT // 4             # White keys occupy 1/4th of the scre
 BLACK_KEY_HEIGHT = WHITE_KEY_HEIGHT // 1.5 # Black keys are shorter
 KEYBOARD_Y = HEIGHT - WHITE_KEY_HEIGHT     # Keyboard starts from the bottom of the screen
 
-# Accurate frequencies for 1 octave (C5 to B5)
-FREQUENCIES = {
+# Base frequencies for 1 octave (C5 to B5)
+BASE_FREQUENCIES = {
     'C': 523,  # C5
     'C#': 554, # C#5
     'D': 587,  # D5
@@ -44,6 +44,13 @@ FREQUENCIES = {
     'A#': 932, # A#5
     'B': 987   # B5
 }
+
+# Octave control
+current_octave = 0  # Default octave (C5-B5)
+
+# Calculate current octave label
+def get_octave_label():
+    return f"C{5 + current_octave}"  # Octave labels: C5, C6, C7, etc.
 
 # Draw the keyboard
 def draw_keyboard():
@@ -75,6 +82,18 @@ def draw_keyboard():
             display.set_pen(WHITE)
             display.text(key, int(text_x), int(text_y), scale=1)
 
+    # Draw octave controls
+    display.set_pen(DARK_GREY)
+    display.rectangle(10, 10, 60, 30)  # "Octave Down" button
+    display.rectangle(WIDTH - 70, 10, 60, 30)  # "Octave Up" button
+    display.set_pen(WHITE)
+    display.text("DOWN", 15, 15, scale=1)
+    display.text("UP", WIDTH - 65, 15, scale=1)
+
+    # Draw current octave label
+    display.set_pen(BLACK)
+    display.text(get_octave_label(), WIDTH // 2 - 20, 15, scale=2)  # Centered label
+
 # Determine which key is touched
 def get_touched_key(touch_x, touch_y):
     # Check for black key touches first
@@ -93,8 +112,10 @@ def get_touched_key(touch_x, touch_y):
     return None
 
 # Play a tone
-def play_tone(freq):
-    print(f"DEBUG: Playing tone at {freq} Hz")
+def play_tone(note):
+    global current_octave
+    freq = int(BASE_FREQUENCIES[note] * (2 ** current_octave))  # Ensure frequency is an integer
+    print(f"DEBUG: Playing {note} at {freq} Hz (Octave {get_octave_label()})")
     pwm.freq(freq)
     pwm.duty_u16(32768)  # Fixed 50% duty cycle
 
@@ -102,6 +123,15 @@ def play_tone(freq):
 def stop_tone():
     print("DEBUG: Stopping tone")
     pwm.duty_u16(0)
+
+# Adjust octave
+def adjust_octave(direction):
+    global current_octave
+    if direction == "up" and current_octave < 2:  # Limit to C7
+        current_octave += 1
+    elif direction == "down" and current_octave > 0:  # Limit to C5
+        current_octave -= 1
+    print(f"DEBUG: Octave changed to {get_octave_label()}")
 
 # Main loop
 try:
@@ -121,20 +151,28 @@ try:
         touch_a = presto.touch_a
         if touch_a[2]:  # If touched
             touch_x, touch_y = touch_a[0], touch_a[1]
-            key = get_touched_key(touch_x, touch_y)
-            if key:
-                display.set_pen(RED)
-                if key in BLACK_KEYS:
-                    # Highlight black key
-                    x = int((BLACK_KEYS.index(key) + 1) * WHITE_KEY_WIDTH - (BLACK_KEY_WIDTH // 2))
-                    display.rectangle(x, int(KEYBOARD_Y), int(BLACK_KEY_WIDTH), int(BLACK_KEY_HEIGHT))
-                else:
-                    # Highlight white key
-                    x = int(WHITE_KEYS.index(key) * WHITE_KEY_WIDTH)
-                    display.rectangle(x, int(KEYBOARD_Y), int(WHITE_KEY_WIDTH), int(WHITE_KEY_HEIGHT))
 
-                # Play the note
-                play_tone(FREQUENCIES[key])
+            # Check for octave control
+            if 10 <= touch_x <= 70 and 10 <= touch_y <= 40:  # "Octave Down" button
+                adjust_octave("down")
+            elif WIDTH - 70 <= touch_x <= WIDTH - 10 and 10 <= touch_y <= 40:  # "Octave Up" button
+                adjust_octave("up")
+            else:
+                # Check if a key was pressed
+                key = get_touched_key(touch_x, touch_y)
+                if key:
+                    display.set_pen(RED)
+                    if key in BLACK_KEYS:
+                        # Highlight black key
+                        x = int((BLACK_KEYS.index(key) + 1) * WHITE_KEY_WIDTH - (BLACK_KEY_WIDTH // 2))
+                        display.rectangle(x, int(KEYBOARD_Y), int(BLACK_KEY_WIDTH), int(BLACK_KEY_HEIGHT))
+                    else:
+                        # Highlight white key
+                        x = int(WHITE_KEYS.index(key) * WHITE_KEY_WIDTH)
+                        display.rectangle(x, int(KEYBOARD_Y), int(WHITE_KEY_WIDTH), int(WHITE_KEY_HEIGHT))
+
+                    # Play the note
+                    play_tone(key)
         else:
             stop_tone()
 
@@ -144,3 +182,4 @@ try:
 finally:
     stop_tone()
     pwm.deinit()
+
