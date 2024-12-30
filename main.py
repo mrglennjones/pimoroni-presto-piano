@@ -29,11 +29,20 @@ WHITE_KEY_HEIGHT = HEIGHT // 4             # White keys occupy 1/4th of the scre
 BLACK_KEY_HEIGHT = WHITE_KEY_HEIGHT // 1.5 # Black keys are shorter
 KEYBOARD_Y = HEIGHT - WHITE_KEY_HEIGHT     # Keyboard starts from the bottom of the screen
 
-# Frequencies for 1 Octave (500 Hz to 2000 Hz)
+# Accurate frequencies for 1 octave (C5 to B5)
 FREQUENCIES = {
-    'C': 500, 'C#': 600, 'D': 700, 'D#': 800, 'E': 900,
-    'F': 1000, 'F#': 1100, 'G': 1200, 'G#': 1300, 'A': 1400,
-    'A#': 1600, 'B': 2000
+    'C': 523,  # C5
+    'C#': 554, # C#5
+    'D': 587,  # D5
+    'D#': 622, # D#5
+    'E': 659,  # E5
+    'F': 698,  # F5
+    'F#': 739, # F#5
+    'G': 783,  # G5
+    'G#': 830, # G#5
+    'A': 880,  # A5
+    'A#': 932, # A#5
+    'B': 987   # B5
 }
 
 # Draw the keyboard
@@ -135,4 +144,3 @@ try:
 finally:
     stop_tone()
     pwm.deinit()
-
